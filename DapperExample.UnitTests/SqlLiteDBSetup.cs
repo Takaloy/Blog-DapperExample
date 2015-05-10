@@ -58,10 +58,8 @@ namespace DapperExample.UnitTests
         }
 
         private void CreateCustomer(SQLiteConnection connection, Customer customer)
-        {
-            
-
-            connection.Query<int>("insert into CUS_CUSTOMERS (ID, FirstName, LastName) values (@Id, @FirstName, @LastName);", customer);
+        {        
+            connection.Execute("insert into CUS_CUSTOMERS (ID, FirstName, LastName) values (@Id, @FirstName, @LastName);", customer);
         }
 
         private Customer RetrieveCustomer(SQLiteConnection connection, int id)
