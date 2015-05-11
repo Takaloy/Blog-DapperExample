@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Data;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
@@ -35,7 +36,7 @@ namespace DapperExample.UnitTests
                 connection.Open();
                 CreateTable(connection);
 
-                CreateCustomer(connection, customerToInsert);
+                InsertCustomer(connection, customerToInsert);
             }            
 
             using (var newconnection = DatabaseRepository.SimpleDbConnection())
@@ -47,7 +48,7 @@ namespace DapperExample.UnitTests
             }
         }
 
-        private void CreateTable(SQLiteConnection connection)
+        private void CreateTable(IDbConnection connection)
         {
             connection.Execute(
                 @"create table CUS_CUSTOMERS (
@@ -57,12 +58,12 @@ namespace DapperExample.UnitTests
                 );            
         }
 
-        private void CreateCustomer(SQLiteConnection connection, Customer customer)
+        private void InsertCustomer(IDbConnection connection, Customer customer)
         {        
             connection.Execute("insert into CUS_CUSTOMERS (ID, FirstName, LastName) values (@Id, @FirstName, @LastName);", customer);
         }
 
-        private Customer RetrieveCustomer(SQLiteConnection connection, int id)
+        private Customer RetrieveCustomer(IDbConnection connection, int id)
         {
             var result = connection.Query<Customer>(@"
                 select Id, FirstName, LastName from CUS_CUSTOMERS where Id = @Id
