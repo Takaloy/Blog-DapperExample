@@ -1,18 +1,12 @@
-﻿using NUnit.Framework;
-using System;
-using System.Data;
-using System.Collections.Generic;
-using System.Data.SQLite;
-using System.IO;
+﻿using System.Data;
 using System.Linq;
-using System.Text;
 using Dapper;
-using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace DapperExample.UnitTests
 {
     [TestFixture]
-    public class SqlLiteDBSetup
+    public class SqlLiteDbSetup
     {
         [SetUp]
         public void Setup()
@@ -23,7 +17,6 @@ namespace DapperExample.UnitTests
         [Test]
         public void SimpleDataAccessTest()
         {
-            var database = new DatabaseRepository();
             var customerToInsert = new Customer
             {
                 Id = 5,
