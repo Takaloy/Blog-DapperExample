@@ -65,7 +65,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Customer.cs" />
+    <Compile Include="DapperManyToOneTest.cs" />
     <Compile Include="DatabaseRepository.cs" />
+    <Compile Include="PurchaseOrder.cs" />
     <Compile Include="SqlLiteDBSetup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
