@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using Dapper;
 using NUnit.Framework;
@@ -53,6 +54,87 @@ namespace DapperExample.UnitTests
                 Assert.AreEqual(firstCustomer.LastName, customerRetrieved.LastName);
                 Assert.AreEqual(5, customerRetrieved.PurchaseOrders.Count);
             }
+        }
+
+        [Test]
+        public void CoolWayIsFasterThanSimplistic()
+        {
+            #region setup
+            var firstCustomer = new Customer
+            {
+                Id = 0,
+                FirstName = "John",
+                LastName = "Doe"
+            };
+
+            var secondCustomer = new Customer
+            {
+                Id = 1,
+                FirstName = "Doctor",
+                LastName = "Who"
+            };
+
+            var customerList = new List<Customer> {firstCustomer, secondCustomer};
+            for (int i = 2; i < 10; i++)
+            {
+                customerList.Add(new Customer
+                {
+                    Id = i,
+                    FirstName = (new Random(i).Next()).ToString(),
+                    LastName = (new Random(i^2).Next()).ToString()
+                });
+            }
+
+            using (var connection = DatabaseRepository.SimpleDbConnection())
+            {
+                connection.Open();
+                CreateTable(connection);
+                InsertCustomer(connection, customerList);
+                GenerateRandomProducts(connection, customerList, 15);
+            }
+            #endregion
+
+            #region proof they are equal
+            using (var connection = DatabaseRepository.SimpleDbConnection())
+            {
+                connection.Open();
+                var coolCustomers = GetCustomers(connection).First(s => s.Id == firstCustomer.Id);;
+                var uncoolCustomers = GetCustomersTheUnCoolWay(connection).First(s => s.Id == firstCustomer.Id);;
+
+                CollectionAssert.AreEquivalent(coolCustomers.PurchaseOrders, uncoolCustomers.PurchaseOrders);   //assert they are the same
+            }
+            #endregion
+
+            #region compare speed
+
+            var coolCustomerWatch = new Stopwatch();
+            coolCustomerWatch.Start();
+            for (var i = 0; i < 2000; i++)
+            {
+                using (var connection = DatabaseRepository.SimpleDbConnection())
+                {
+                    connection.Open();
+                    GetCustomers(connection);
+                }
+            }
+            coolCustomerWatch.Stop();
+            var coolCustomerTimeOutput = coolCustomerWatch.ElapsedMilliseconds;
+            Console.WriteLine("cool customers time : " + coolCustomerTimeOutput);
+
+            var uncoolCustomerWatch = new Stopwatch();
+            uncoolCustomerWatch.Start();
+            for (var i = 0; i < 2000; i++)
+            {
+                using (var connection = DatabaseRepository.SimpleDbConnection())
+                {
+                    connection.Open();
+                    GetCustomersTheUnCoolWay(connection);
+                }
+            }
+            uncoolCustomerWatch.Stop();
+            var uncoolCustomerTimeOutput = uncoolCustomerWatch.ElapsedMilliseconds;
+            Console.WriteLine("uncool customers time : " + uncoolCustomerTimeOutput);
+            #endregion
         }
 
         private void InsertCustomer(IDbConnection connection, IList<Customer> customers)
@@ -108,6 +190,29 @@ namespace DapperExample.UnitTests
 
             return result.Distinct().ToList();
         }
+
+        private IList<Customer> GetCustomersTheUnCoolWay(IDbConnection connection)
+        {
+            var customers = connection.Query<Customer>(@"
+                select
+                    Id, FirstName, LastName
+                from CUS_CUSTOMERS                
+                ").ToList();
+
+            foreach (var customer in customers)
+            {
+                var products = connection.Query<PurchaseOrder>(@"
+                select 
+                    p.Id, p.Item, p.Description, p.Amount
+                from PO_PURCHASE_ORDERS as p
+                where p.CusId = @Id
+                ", new {customer.Id}).ToList();
+
+                customer.PurchaseOrders = products;
+            }
+
+            return customers;
+        } 
 
         private void CreateTable(IDbConnection connection)
         {
